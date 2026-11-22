@@ -1,0 +1,5 @@
+# Force LF for all text files (build scripts run on Linux runners)
+* text=auto eol=lf
+# Board data blobs are binary
+*.ipq5018 binary
+*.qcn6122 binary

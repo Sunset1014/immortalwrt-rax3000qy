@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# First-boot defaults for CMCC RAX3000Q / RAX3000QY
+# (runs once at first boot, then is removed automatically)
+#
+
+# --- Software flow offload (nftables flowtable) — boosts NAT throughput ---
+uci -q batch <<-EOF
+	set firewall.@defaults[0].flow_offloading='1'
+	commit firewall
+EOF
+
+# --- zram swap sized for 256 MiB RAM (ath11k needs the headroom) ---
+uci -q set system.@system[0].zram_size_mb='128'
+uci -q commit system
+
+# --- WiFi country code (needed for full channel list / CN regulations) ---
+[ -e /etc/config/wireless ] || wifi config 2>/dev/null
+for r in $(uci -q show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+	uci -q set wireless."$r".country='CN'
+done
+uci -q commit wireless
+
+exit 0

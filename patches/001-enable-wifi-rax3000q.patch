@@ -1,0 +1,81 @@
+diff --git a/target/linux/qualcommax/dts/ipq5018-rax3000q.dts b/target/linux/qualcommax/dts/ipq5018-rax3000q.dts
+index 293cdda..b2138f7 100644
+--- a/target/linux/qualcommax/dts/ipq5018-rax3000q.dts
++++ b/target/linux/qualcommax/dts/ipq5018-rax3000q.dts
+@@ -30,6 +30,20 @@
+ 		stdout-path = "serial0:115200n8";
+ 	};
+ 
++	reserved-memory {
++		/*
++		 * The stock firmware reserves 0x4b000000-0x4e400000 for the
++		 * Q6/WiFi subsystems. The upstream dtsi only reserves the
++		 * first 27 MiB (q6_region); add the remainder so that the
++		 * static firmware regions referenced through qcom,bdf-addr
++		 * and qcom,m3-dump-addr are never handed to the kernel.
++		 */
++		wifi_static_mem: wifi-static-mem@4cb00000 {
++			reg = <0x0 0x4cb00000 0x0 0x1900000>;
++			no-map;
++		};
++	};
++
+ 	keys {
+ 		compatible = "gpio-keys";
+ 		pinctrl-0 = <&button_pins>;
+@@ -144,6 +158,16 @@
+ 						#nvmem-cell-cells = <1>;
+ 					};
+ 
++					// 2.4 GHz radio calibration data
++					caldata_2g: calibration@1000 {
++						reg = <0x1000 0x20000>;
++					};
++
++					// 5 GHz (QCN6102) radio calibration data
++					caldata_5g: calibration@26800 {
++						reg = <0x26800 0x20000>;
++					};
++
+ 				};
+ 			};
+ 		};
+@@ -321,7 +345,7 @@
+ //256M RAM is too small for ath11k, so WiFi is disabled to prevent OOM.
+ 
+ &q6v5_wcss {
+-	status = "disabled";
++	status = "okay";
+ 	/* The QCN6102 radio should map to UPD ID 2. Without       */
+ 	/* bootargs, the firmware will expect it to be on UPD ID 3 */
+ 
+@@ -335,17 +359,19 @@
+ 
+ &wifi {
+ 	// IPQ5018
+-	status = "disabled";
++	status = "okay";
+ 
+ 	qcom,rproc = <&q6_wcss_pd1>;
+ 	qcom,calibration-variant = "CMCC-RAX3000Q";
+ 	qcom,ath11k-fw-memory-mode = <1>;
+ 	qcom,bdf-addr = <0x4c400000>;
++	nvmem-cell-names = "calibration";
++	nvmem-cells = <&caldata_2g>;
+ };
+ 
+ &wifi1 {
+ 	// QCN6102 5G
+-	status = "disabled";
++	status = "okay";
+ 
+ 	qcom,rproc = <&q6_wcss_pd2>;
+ 	qcom,userpd-subsys-name = "q6v5_wcss_userpd2";
+@@ -353,5 +379,7 @@
+ 	qcom,ath11k-fw-memory-mode = <1>;
+ 	qcom,bdf-addr = <0x4d100000>;
+ 	qcom,m3-dump-addr = <0x4df00000>;
++	nvmem-cell-names = "calibration";
++	nvmem-cells = <&caldata_5g>;
+ };
+ 
